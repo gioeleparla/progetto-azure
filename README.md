@@ -57,3 +57,67 @@ Prima dello smantellamento dell'ambiente di laboratorio, l'architettura è stata
 1. Il corretto isolamento iniziale delle VM e la loro raggiungibilità immediata solo dopo l'attivazione dello stato *Connected* del VNet Peering.
 2. L'efficacia del Path-Based Routing tramite test di risposta HTTP da browser esterno sull'IP pubblico del Gateway, con instradamento corretto dei contenuti multimediali.
 3. La corretta tracciabilità dei log prestazionali (CPU media) e l'innesco automatico dello stato *Fired* sugli avvisi al superamento delle soglie critiche.
+
+
+
+
+# Enterprise Cloud Architecture Project - Microsoft Azure (ENGLISH VERSION)
+
+Welcome! This repository serves as a **technical showcase and portfolio** for the final project I completed during my time at **Maggioli Academy** (Reference Certification: AZ-104 Microsoft Azure Administrator).
+
+The objective of the project was the design, deployment, automation, and hardening of a complex enterprise cloud infrastructure for the target company *Contoso Ltd.*.
+
+> 💡 **Lab Note:** The project was entirely developed and validated within a sandbox laboratory environment (*GoDeploy*). Since the environment was temporary and is no longer active, this repository hosts the official architectural documentation.
+>
+> 📂 **[CLICK HERE TO VIEW THE FULL PDF REPORT](./cloud_project.pdf)** 
+
+---
+
+## 📐 Functional Flow & Logical Architecture
+The deployed infrastructure integrates key operational domains into a single, continuous flow:
+
+1. **Identity & Governance (Entry Point):** Centralized user management and authentication.
+2. **Networking (Hub-and-Spoke Topology):** Traffic routing and load balancing towards isolated application subnets.
+3. **Compute & Workload (Spoke VNet):** Service delivery on compute instances within a secured backend.
+4. **Observability & Operations (Monitoring):** Centralized collection of metrics, diagnostic logs, and alert management.
+
+---
+
+## 🚀 Technical Details of the Implemented Infrastructure
+
+### 1. Identity & Governance (Principle of Least Privilege)
+* **Access Control:** Centralized identity configuration on **Microsoft Entra ID** to eliminate the use of generic or high-risk credentials in daily operations.
+* **Role-Based Access Control (RBAC):** Implementation of a permissions matrix at the Resource Group level (`rg-contoso-core`):
+  * *Virtual Machine Contributor / Contributor:* Assigned to the IT team for operational management, excluding the ability to modify access permissions.
+  * *Reader:* Assigned to audit personnel for read-only visibility into resource status.
+
+### 2. Infrastructure as Code (IaC) & Automation
+* **Automated Provisioning:** Stating declarative JSON configuration files (**ARM Templates** - `template.json` and `parameters.json`) for automated baseline resource allocation, eliminating discrepancies and human errors resulting from manual GUI configurations.
+
+### 3. Networking, Peering & Perimeter Security
+* **Network Segmentation:** Creation of the primary Virtual Network (`GioeleVnet`) and segmentation into dedicated functional subnets (`GioVnetbackend`, `GioVnetdatabase`) with an IP addressing scheme of `10.20.0.0/16`.
+* **Traffic Isolation:** Configuration and association of **Network Security Groups (NSGs)** directly to the workload subnets. Definition of strict rules:
+  * *Inbound:* Total block of unauthorized traffic and selective enablement of HTTP/HTTPS ports (80/443) only.
+  * *Outbound:* Traffic restrictions to prevent unauthorized external communications or data exfiltration.
+* **Intersite Connectivity:** Private, high-performance connection between the central management network (Hub VNet) and application networks (Spoke VNets) via bi-directional **VNet Peering**, leveraging the Microsoft backbone without exposing traffic to the public Internet.
+
+### 4. Compute, High Availability & Traffic Management
+* **Scalable Compute:** Provisioning of Azure Virtual Machine instances based on Windows Server / Linux images.
+* **Autoscaling (VMSS):** Configuration of a Virtual Machine Scale Set (`vmss1`) with Autoscale rules based on performance metrics: *scale-out* (adding instances) when average CPU usage exceeds 70%, and *scale-in* (reducing instances) during low-traffic windows for cost optimization.
+* **Dual-Layer Traffic Management:**
+  * *Layer 4 (Azure Load Balancer):* Configuration of the `Gioele-LB` load balancer with TCP health probes (`gioele-HealthProbe`) every 5 seconds to redistribute traffic across the Backend Pool VMs.
+  * *Layer 7 (Application Gateway):* Implementation of `gioele-appgw` to manage HTTP/HTTPS web traffic using **Path-Based Routing**, automatically routing users to specific backend pools based on the URL path (e.g., `/image/*` or `/video/*`).
+
+### 5. Monitoring, Observability & Data Protection
+* **Centralized Observability:** Aggregation, collection, and querying of connectivity and diagnostic logs sent by the Azure Monitor Agent into a unified **Log Analytics Workspace** (validated via records in the `Heartbeat` table).
+* **Automated Alerts:** Setting up Alerting rules (`VM Availability`) with Severity 3 (Informational) level to intercept drops in resource availability.
+* **Disaster Recovery (BCDR):** Configuration of a *Recovery Services Vault* set up with **Geo-redundant Storage (GRS)** replication, ensuring automatic data replication to a distant secondary region to withstand critical regional data center failures.
+* **Backup Policies:** Definition of the `gioele-backup` policy (daily schedule with a 2-day snapshot retention) with successful validation of preliminary integrity checks (*Backup Pre-Check: Passed*).
+
+---
+## 🏁 Validation Results
+Prior to the laboratory environment decommissioning, the architecture was successfully collaudated by verifying:
+1. The initial isolation of the VMs and their immediate reachability only after the VNet Peering status transitioned to *Connected*.
+2. The effectiveness of Path-Based Routing via external browser HTTP response tests on the Gateway's public IP, resulting in correct multimedia content routing.
+3. The precise traceability of performance logs (average CPU) and the automated triggering (*Fired* status) of alerts upon exceeding critical thresholds.
+
